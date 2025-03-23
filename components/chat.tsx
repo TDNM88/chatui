@@ -1,7 +1,7 @@
 "use client"
 
 import { useChat } from "@ai-sdk/react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,8 +15,11 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { toast } from "@/components/ui/use-toast"
 import { FileUploadResult } from "@/lib/files"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { useDebouncedCallback } from "use-debounce"
 
-// Define available models
+// Định nghĩa các model có sẵn
 const AVAILABLE_MODELS = [
   { id: "deepseek-r1-distill-llama-70b", name: "DeepSeek R1 Distill Llama 70B" },
   { id: "llama3-8b-8192", name: "Llama 3 8B" },
@@ -49,17 +52,32 @@ export function Chat() {
   const fetchPersonas = async () => {
     try {
       const response = await fetch("/api/personas")
-      if (response.ok) {
-        const data = await response.json()
-        setPersonas(data.personas || [])
+      
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        throw new Error(`Unexpected response: ${text}`)
+      }
 
-        // Set the first persona as default if available
-        if (data.personas && data.personas.length > 0 && !selectedPersona) {
-          setSelectedPersona(data.personas[0].id)
-        }
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || "Failed to fetch personas")
+      }
+
+      const data = await response.json()
+      setPersonas(data.personas || [])
+
+      if (data.personas && data.personas.length > 0 && !selectedPersona) {
+        setSelectedPersona(data.personas[0].id)
       }
     } catch (error) {
       console.error("Error fetching personas:", error)
+      toast({
+        title: t("notification.error"),
+        description: error instanceof Error ? error.message : "Failed to fetch personas",
+        variant: "destructive",
+      })
     }
   }
 
@@ -109,8 +127,21 @@ export function Chat() {
     }
   };
 
+  // Debounce input change to improve performance
+  const debouncedHandleInputChange = useDebouncedCallback(handleInputChange, 300)
+
+  // Auto-scroll to bottom when new messages arrive
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
   return (
-    <div className="flex flex-col h-[80vh]">
+    <div className="flex flex-col h-[80vh] max-w-4xl mx-auto">
       <div className="flex justify-end mb-2">
         <Button
           variant="ghost"
@@ -166,46 +197,70 @@ export function Chat() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto mb-4 p-4 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-center text-muted-foreground">
-            <p>{t("chat.welcome")}</p>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn(
-                "flex gap-3 mb-4",
-                message.role === "user" ? "justify-end" : "justify-start"
-              )}
-            >
-              {message.role === "assistant" && (
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>AI</AvatarFallback>
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                </Avatar>
-              )}
+      {/* Chat messages */}
+      <ScrollArea className="flex-1 mb-4 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="p-4 space-y-4">
+          {messages.length === 0 ? (
+            <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+              <p>{t("chat.welcome")}</p>
+            </div>
+          ) : (
+            messages.map((message) => (
               <div
+                key={message.id}
                 className={cn(
-                  "max-w-[80%] p-3 rounded-lg",
-                  message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                  "flex gap-3 mb-4",
+                  message.role === "user" ? "justify-end" : "justify-start"
                 )}
               >
-                <div className="whitespace-pre-wrap">{message.content}</div>
+                {message.role === "assistant" && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>AI</AvatarFallback>
+                        <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>DeepSeek R1 Assistant</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                <div
+                  className={cn(
+                    "max-w-[80%] p-3 rounded-lg relative",
+                    message.role === "user"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  )}
+                >
+                  <div className="whitespace-pre-wrap break-words">
+                    {message.content}
+                  </div>
+                  <div className="absolute -bottom-5 text-xs text-muted-foreground">
+                    {new Date().toLocaleTimeString()}
+                  </div>
+                </div>
+                {message.role === "user" && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Avatar className="h-8 w-8">
+                        <AvatarFallback>U</AvatarFallback>
+                      </Avatar>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>You</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
-              {message.role === "user" && (
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>U</AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
 
+      {/* Input area */}
       <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-4">
         {attachments.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
@@ -231,7 +286,7 @@ export function Chat() {
           <div className="flex gap-2">
             <Textarea
               value={input}
-              onChange={handleInputChange}
+              onChange={debouncedHandleInputChange}
               placeholder={t("chat.placeholder")}
               className="flex-1 min-h-[80px] resize-none"
               onKeyDown={(e) => {
@@ -241,8 +296,17 @@ export function Chat() {
                 }
               }}
             />
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            <Button 
+              type="submit" 
+              size="icon" 
+              disabled={isLoading || !input.trim()}
+              className="h-auto"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </form>

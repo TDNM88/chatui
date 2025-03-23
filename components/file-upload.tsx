@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Loader2, Upload } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useLanguage } from "@/contexts/language-context"
-import { FileUploadResult } from "@/lib/files"
 
 export type FileUploadResult = {
   id: string

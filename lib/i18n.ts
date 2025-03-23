@@ -9,12 +9,12 @@ export type Translations = {
 export const translations: Translations = {
   // Common
   "app.title": {
-    en: "DeepSeek R1 Chatbot",
-    vi: "Chatbot DeepSeek R1",
+    en: "TDNM CHATBOT",
+    vi: "Trợ lý TDNM",
   },
   "app.description": {
-    en: "A chatbot powered by Groq's DeepSeek R1 Distill Llama 70B model",
-    vi: "Chatbot được hỗ trợ bởi mô hình DeepSeek R1 Distill Llama 70B của Groq",
+    en: "A chatbot powered by TDNM",
+    vi: "Chatbot được phát triển bởi TDNM",
   },
 
   // Navigation

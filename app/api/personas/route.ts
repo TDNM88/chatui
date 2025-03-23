@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getPersonas, getPersonaById, createPersona, updatePersona, deletePersona } from "@/lib/personas"
+import { NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   try {
@@ -15,11 +16,14 @@ export async function GET(req: NextRequest) {
       return Response.json({ persona })
     } else {
       const personas = await getPersonas()
-      return Response.json({ personas })
+      return NextResponse.json({ personas })
     }
   } catch (error) {
     console.error("Error fetching personas:", error)
-    return Response.json({ error: "Failed to fetch personas" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    )
   }
 }
 

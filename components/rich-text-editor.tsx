@@ -198,7 +198,7 @@ export function RichTextEditor({
         onInput={handleInput}
         onKeyDown={handleKeyDown}
         style={{ minHeight }}
-        placeholder={placeholder}
+        data-placeholder={placeholder}
         dangerouslySetInnerHTML={{ __html: value }}
       />
     </div>

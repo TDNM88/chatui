@@ -18,6 +18,25 @@ export async function POST(req: Request) {
       language = "en",
     } = await req.json()
 
+    // Validate model
+    const availableModels = [
+      "deepseek-r1-distill-llama-70b",
+      "llama3-8b-8192",
+      "llama3-70b-8192",
+      "mixtral-8x7b-32768",
+      "gemma-7b-it",
+    ]
+
+    if (!availableModels.includes(model)) {
+      return new Response(
+        JSON.stringify({
+          error: "Invalid model selected",
+          availableModels,
+        }),
+        { status: 400 }
+      )
+    }
+
     // Get the last user message
     const lastUserMessage = messages.findLast((message: any) => message.role === "user")
 

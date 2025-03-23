@@ -175,10 +175,12 @@ export async function updateFileMetadata(
     // Add the ID as the last parameter
     values.push(id)
 
-    const result = await sql.query(
-      `UPDATE files SET ${updates.join(", ")} WHERE id = $${values.length} RETURNING id`,
-      ...values,
-    )
+    const result = await sql`
+      UPDATE files 
+      SET ${sql(updates.join(", "))} 
+      WHERE id = ${id} 
+      RETURNING id
+    `
 
     return result.length > 0
   } catch (error) {

@@ -1,7 +1,7 @@
-import { neon } from "@neondatabase/serverless"
+import { neon } from '@neondatabase/serverless'
 
-// Create a SQL client with the pooled connection
-export const sql = neon(process.env.DATABASE_URL!)
+const sql = neon(process.env.DATABASE_URL)
+export { sql }
 
 // Helper function to convert database rows to camelCase
 export function toCamelCase<T>(rows: any[]): T[] {
