@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server"
 import { getCategories, getCategoryById, createCategory, updateCategory, deleteCategory } from "@/lib/categories"
+import { NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,24 +41,16 @@ export async function POST(req: Request) {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
-    const { id, name, description } = await req.json()
-
-    if (!id) {
-      return Response.json({ error: "Category ID is required" }, { status: 400 })
-    }
-
-    const success = await updateCategory(id, { name, description })
-
-    if (!success) {
-      return Response.json({ error: "Category not found" }, { status: 404 })
-    }
-
-    return Response.json({ success: true })
+    const { id, ...data } = await req.json()
+    const success = await updateCategory(id, data)
+    return NextResponse.json({ success })
   } catch (error) {
-    console.error("Error updating category:", error)
-    return Response.json({ error: "Failed to update category" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    )
   }
 }
 
