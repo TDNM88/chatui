@@ -48,7 +48,7 @@ export async function createChat(title = "New Chat"): Promise<Chat> {
 // Get all chats
 export async function getChats(): Promise<Chat[]> {
   try {
-    const ids = await kv.smembers<string>(CHAT_INDEX_KEY)
+    const ids = await kv.smembers<string[]>(CHAT_INDEX_KEY)
 
     if (!ids || ids.length === 0) {
       return []
