@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { FileUpload } from "@/components/file-upload"
-import { Loader2, Send } from "lucide-react"
+import { Loader2, Send, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useLanguage } from "@/contexts/language-context"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -39,6 +39,7 @@ export function Chat() {
   const [selectedPersona, setSelectedPersona] = useState<string | null>(null)
   const { t, language } = useLanguage()
   const [isLoading, setIsLoading] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   // Fetch personas on component mount
   useEffect(() => {
@@ -109,111 +110,143 @@ export function Chat() {
   };
 
   return (
-    <div className="flex flex-col h-[70vh]">
-      <div className="flex flex-col gap-4 mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="model-select">{t("chat.model")}</Label>
-            <Select value={selectedModel} onValueChange={setSelectedModel}>
-              <SelectTrigger id="model-select">
-                <SelectValue placeholder={t("chat.model")} />
-              </SelectTrigger>
-              <SelectContent>
-                {AVAILABLE_MODELS.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="persona-select">{t("chat.persona")}</Label>
-            <Select value={selectedPersona || ""} onValueChange={setSelectedPersona}>
-              <SelectTrigger id="persona-select">
-                <SelectValue placeholder={t("chat.persona")} />
-              </SelectTrigger>
-              <SelectContent>
-                {personas.map((persona) => (
-                  <SelectItem key={persona.id} value={persona.id}>
-                    {persona.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Switch id="use-knowledge" checked={useKnowledge} onCheckedChange={setUseKnowledge} />
-          <Label htmlFor="use-knowledge">{t("chat.useKnowledge")}</Label>
-        </div>
+    <div className="flex flex-col h-[80vh]">
+      <div className="flex justify-end mb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground"
+          onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+        >
+          <Settings className="h-4 w-4 mr-2" />
+          {t("chat.settings")}
+        </Button>
       </div>
 
-      <div className="flex-1 overflow-y-auto mb-4 space-y-4 p-4 rounded-lg border">
+      {isSettingsOpen && (
+        <div className="bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 p-4 rounded-lg mb-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="model-select">{t("chat.model")}</Label>
+              <Select value={selectedModel} onValueChange={setSelectedModel}>
+                <SelectTrigger id="model-select">
+                  <SelectValue placeholder={t("chat.model")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {AVAILABLE_MODELS.map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="persona-select">{t("chat.persona")}</Label>
+              <Select value={selectedPersona || ""} onValueChange={setSelectedPersona}>
+                <SelectTrigger id="persona-select">
+                  <SelectValue placeholder={t("chat.persona")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {personas.map((persona) => (
+                    <SelectItem key={persona.id} value={persona.id}>
+                      {persona.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Switch id="use-knowledge" checked={useKnowledge} onCheckedChange={setUseKnowledge} />
+            <Label htmlFor="use-knowledge">{t("chat.useKnowledge")}</Label>
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto mb-4 p-4 rounded-lg border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-center text-muted-foreground">
             <p>{t("chat.welcome")}</p>
           </div>
         ) : (
           messages.map((message) => (
-            <Card
+            <div
               key={message.id}
               className={cn(
-                "max-w-[80%]",
-                message.role === "user" ? "ml-auto bg-primary text-primary-foreground" : "mr-auto",
-                message.role === "assistant" && "font-sans",
-                message.content === "Thinking..." && "font-mono"
+                "flex gap-3 mb-4",
+                message.role === "user" ? "justify-end" : "justify-start"
               )}
             >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>{message.role === "user" ? "U" : "AI"}</AvatarFallback>
-                    {message.role === "assistant" && <AvatarImage src="/placeholder.svg?height=32&width=32" />}
-                  </Avatar>
-                  <div className="whitespace-pre-wrap">{message.content}</div>
-                </div>
-              </CardContent>
-            </Card>
+              {message.role === "assistant" && (
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>AI</AvatarFallback>
+                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                </Avatar>
+              )}
+              <div
+                className={cn(
+                  "max-w-[80%] p-3 rounded-lg",
+                  message.role === "user"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted"
+                )}
+              >
+                <div className="whitespace-pre-wrap">{message.content}</div>
+              </div>
+              {message.role === "user" && (
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              )}
+            </div>
           ))
         )}
       </div>
 
-      {attachments.length > 0 && (
-        <div className="mb-2 flex flex-wrap gap-2">
-          {attachments.map((url, index) => (
-            <div key={index} className="text-xs bg-muted p-1 rounded flex items-center">
-              <span className="truncate max-w-[200px]">{t("knowledge.fileAttached")}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 w-5 p-0 ml-1"
-                onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
-              >
-                ×
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="sticky bottom-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pt-4">
+        {attachments.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {attachments.map((url, index) => (
+              <div key={index} className="text-xs bg-muted p-1 rounded flex items-center">
+                <span className="truncate max-w-[200px]">{t("knowledge.fileAttached")}</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-5 p-0 ml-1"
+                  onClick={() => setAttachments(attachments.filter((_, i) => i !== index))}
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
 
-      <form onSubmit={handleSubmitWrapper} className="flex flex-col gap-2">
-        <FileUpload onUpload={handleFileUpload} />
+        <form onSubmit={handleSubmitWrapper} className="flex flex-col gap-2">
+          <FileUpload onUpload={handleFileUpload} />
 
-        <div className="flex gap-2">
-          <Textarea
-            value={input}
-            onChange={handleInputChange}
-            placeholder={t("chat.placeholder")}
-            className="flex-1 min-h-[80px] resize-none"
-          />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
-      </form>
+          <div className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={handleInputChange}
+              placeholder={t("chat.placeholder")}
+              className="flex-1 min-h-[80px] resize-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault()
+                  handleSubmitWrapper(e)
+                }
+              }}
+            />
+            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            </Button>
+          </div>
+        </form>
+      </div>
     </div>
   )
 }
