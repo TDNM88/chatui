@@ -63,9 +63,9 @@ export async function createCategory(category: {
   }
 }
 
-export async function updateCategory(
+export async function updateCategoryMetadata(
   id: string,
-  category: {
+  metadata: {
     name?: string
     description?: string
   },
@@ -75,14 +75,14 @@ export async function updateCategory(
     const updates = []
     const values: any[] = []
 
-    if (category.name !== undefined) {
+    if (metadata.name !== undefined) {
       updates.push(`name = $${updates.length + 1}`)
-      values.push(category.name)
+      values.push(metadata.name)
     }
 
-    if (category.description !== undefined) {
+    if (metadata.description !== undefined) {
       updates.push(`description = $${updates.length + 1}`)
-      values.push(category.description)
+      values.push(metadata.description)
     }
 
     if (updates.length === 0) {
@@ -92,14 +92,17 @@ export async function updateCategory(
     // Add the ID as the last parameter
     values.push(id)
 
-    const result = await sql.query(
-      `UPDATE categories SET ${updates.join(", ")} WHERE id = $${values.length} RETURNING id`,
-      ...values,
-    )
+    // Use template literals instead of .query()
+    const result = await sql`
+      UPDATE categories 
+      SET ${sql(updates.join(", "))} 
+      WHERE id = ${id} 
+      RETURNING id
+    `
 
     return result.length > 0
   } catch (error) {
-    console.error("Error updating category:", error)
+    console.error("Error updating category metadata:", error)
     throw error
   }
 }
